@@ -33,6 +33,7 @@ from QUANTAXIS.QAUtil.QALogs import QA_util_log_info
 from QUANTAXIS.QAUtil.QAParameter import (AMOUNT_MODEL, FREQUENCE, MARKET_TYPE,
                                           ORDER_DIRECTION, ORDER_MODEL)
 
+import random
 
 class MAStrategy(QA_Account):
     def __init__(self, user_cookie, portfolio_cookie, account_cookie,  init_cash=100000, init_hold={}):
@@ -137,6 +138,7 @@ def run_daybacktest():
                         end='2017-02-10',
                         code_list=QA.QA_fetch_stock_block_adv().code[0:5],
                         commission_fee=0.00015)
+    backtest._generate_account()
     print(backtest.account)
     backtest.start_market()
 
@@ -159,6 +161,7 @@ def run_minbacktest():
 
 
 if __name__ == '__main__':
+    random.seed(10)
     run_daybacktest()
     #run_minbacktest()
 

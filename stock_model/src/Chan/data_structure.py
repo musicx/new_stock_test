@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 from collections import Counter
 from functools import reduce
-#import QUANTAXIS as qa
+
 
 class Candle(object):
     def __init__(self, open, close, high, low, date, start_position):

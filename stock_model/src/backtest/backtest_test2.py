@@ -19,10 +19,10 @@ class MAStrategy(QA_Account):
         self.market_type = MARKET_TYPE.STOCK_CN
         self.commission_coeff = 0.00015
         self.tax_coeff = 0.0001
-        self.reset_assets(100000)  # 这是第二种修改办法
+        self.reset_assets(100000)
 
     def on_bar(self, event):
-        print(threading.enumerate())
+        #print(threading.enumerate())
         sellavailable = self.sell_available
         try:
             for item in event.market_data.code:
@@ -80,10 +80,11 @@ def run_daybacktest():
     import QUANTAXIS as QA
     backtest = Backtest(market_type=MARKET_TYPE.STOCK_CN,
                         frequence=FREQUENCE.DAY,
-                        start='2017-01-01',
-                        end='2017-02-10',
-                        code_list=QA.QA_fetch_stock_block_adv().code[0:5],
-                        commission_fee=0.00015)
+                        start='2019-01-01',
+                        end='2019-01-10',
+                        code_list=QA.QA_fetch_stock_block_adv().code[0],
+                        commission_fee=0.0001)
+    backtest._generate_account()
     print(backtest.account)
     backtest.start_market()
 
