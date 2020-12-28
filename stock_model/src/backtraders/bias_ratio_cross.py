@@ -7,9 +7,11 @@ from quantax.data_query_advance import local_get_stock_day_adv
 import backtrader as bt
 
 # Create a Stratey
-class TestStrategy(bt.Strategy):
+class BiasRatioCrossStrategy(bt.Strategy):
     params = (
-        ('maperiod', 15),
+        ('short', 20),
+        ('mid', 60),
+        ('long', 120)
     )
 
     def log(self, txt, dt=None):
@@ -26,18 +28,19 @@ class TestStrategy(bt.Strategy):
         self.buyprice = None
         self.buycomm = None
 
-        # Add a MovingAverageSimple indicator
-        self.sma = bt.indicators.SimpleMovingAverage(
-            self.datas[0], period=self.params.maperiod)
-        self.ema = bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
+        # Add MovingAverageSimple indicator
+        self.short = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.short)
+        self.mid = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.mid)
+        self.long = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.long)
+
+        self.csr = (self.dataclose / self.short) - 1
+        self.smr = (self.short / self.mid) - 1
+        self.mlr = (self.mid / self.long) - 1
 
         # Indicators for the plotting show
-
-        bt.indicators.WeightedMovingAverage(self.datas[0], period=25, subplot=True)
         bt.indicators.StochasticSlow(self.datas[0])
         bt.indicators.MACDHisto(self.datas[0])
         rsi = bt.indicators.RSI(self.datas[0])
-        bt.indicators.SmoothedMovingAverage(rsi, period=10)
         bt.indicators.ATR(self.datas[0], plot=False)
 
     def notify_order(self, order):
@@ -74,13 +77,11 @@ class TestStrategy(bt.Strategy):
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
-
-        self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f' %
-                 (trade.pnl, trade.pnlcomm))
+        self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f' % (trade.pnl, trade.pnlcomm))
 
     def next(self):
         # Simply log the closing price of the series from the reference
-        self.log('Close, %.2f' % self.dataclose[0])
+        #self.log('Close, %.2f' % self.dataclose[0])
 
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
@@ -90,7 +91,7 @@ class TestStrategy(bt.Strategy):
         if not self.position:
 
             # Not yet ... we MIGHT BUY if ...
-            if self.dataclose[0] > self.sma[0] and self.dataclose > self.ema:
+            if self.csr > self.smr and self.smr > self.mlr and self.smr > self.smr[-1] and self.csr[-1] < self.smr[-1]:
 
                 # BUY, BUY, BUY!!! (with all possible default parameters)
                 self.log('BUY CREATE, %.2f' % self.dataclose[0])
@@ -100,7 +101,7 @@ class TestStrategy(bt.Strategy):
 
         else:
 
-            if self.dataclose[0] < self.sma[0]:
+            if self.csr < self.smr or self.csr < self.mlr or self.csr < 0:
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
@@ -108,11 +109,12 @@ class TestStrategy(bt.Strategy):
                 self.order = self.sell()
 
 
+
 def prepare_data(code):
+    print('reading data... {}'.format(code))
     data = local_get_stock_day_adv(code, start=datetime.date(2010, 1, 1).strftime('%Y-%m-%d'),
                                    end=datetime.datetime.today().strftime('%Y-%m-%d')).to_qfq()
     formatted = data.data.reset_index().loc[:, ['date', 'open', 'high', 'low', 'close', 'volume']]
-    # formatted['openinterest'] = -1
     formatted.rename(columns={'date': 'datetime'}, inplace=True)
     return formatted.set_index('datetime')
 
@@ -122,24 +124,24 @@ if __name__ == '__main__':
     cerebro = bt.Cerebro()
 
     # Add a strategy
-    cerebro.addstrategy(TestStrategy)
+    cerebro.addstrategy(BiasRatioCrossStrategy)
 
-    # Create a Data Feed
-    stock_data = prepare_data('000001')
+    # Create a Data FeedRatio
+    stock_data = prepare_data('000723')
     print('data samples:\n', stock_data.head())
 
     data = bt.feeds.PandasData(dataname=stock_data,
-                               fromdate=datetime.datetime(2015, 1, 1),
-                               todate=datetime.datetime(2015, 12, 31))
+                               fromdate=datetime.datetime(2014, 1, 1),
+                               todate=datetime.datetime(2020, 11, 30))
 
     # Add the Data Feed to Cerebro
     cerebro.adddata(data)
 
     # Set our desired cash start
-    cerebro.broker.setcash(1000.0)
+    cerebro.broker.setcash(100000.0)
 
     # Add a FixedSize sizer according to the stake
-    cerebro.addsizer(bt.sizers.FixedSize, stake=10)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=80)
 
     # Set the commission
     cerebro.broker.setcommission(commission=0.0001)

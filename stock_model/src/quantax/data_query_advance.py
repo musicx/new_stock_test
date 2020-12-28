@@ -122,9 +122,7 @@ def local_get_stock_day_adv(
         # 🛠 todo 报告是代码不合法，还是日期不合法
         print(
             "QA Error QA_fetch_stock_day_adv parameter code=%s , start=%s, end=%s call QA_fetch_stock_day return None"
-            % (code,
-               start,
-               end)
+            % (code, start, end)
         )
         return None
     else:
