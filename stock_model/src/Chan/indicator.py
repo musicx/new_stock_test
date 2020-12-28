@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import QUANTAXIS as qtx
 from datetime import datetime, timedelta
 from Chan.data_structure import *
 

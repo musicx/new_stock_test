@@ -80,7 +80,7 @@ def backtest(stock, print_detail):
         print('error for stock {}'.format(stock))
         return -100.0, None, None
 
-    data_chosen = data.select_time('2010-03-01', '2018-06-08')
+    data_chosen = data.select_time('2018-03-01', '2020-06-08')
 
     has_hold = False
     points = []
@@ -112,14 +112,14 @@ def backtest(stock, print_detail):
 
 if __name__ == '__main__':
     # get data from mongodb
-    stocks = QA.QA_fetch_stock_list_adv().code.tolist()
-    # stocks = ['002762', '002458', '002133', '600115']
+    #stocks = QA.QA_fetch_stock_list_adv().code.tolist()
+    stocks = ['002762', '002458', '002133', '600115']
     # stocks = ['002458']
     returns = Parallel(n_jobs=4)(delayed(backtest)(stock, False) for stock in stocks)
     # returns = [backtest(stock, True) for stock in stocks]
     rets = np.array([r[0] for r in returns if r[0] != -100])
     history = pd.concat([r[1] for r in returns if r[0] != -100])
-    history.to_hdf('../data/cci_long.hdf', 'data')
+    # history.to_hdf('../data/cci_long.hdf', 'data')
     print('\navg returns: {}, std: {}'.format(rets.mean(), rets.std()))
     rets.sort()
     print('\nmid returns: {}'.format(rets[len(rets) // 2]))
