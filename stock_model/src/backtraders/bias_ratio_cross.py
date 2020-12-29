@@ -127,7 +127,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(BiasRatioCrossStrategy)
 
     # Create a Data FeedRatio
-    stock_data = prepare_data('000723')
+    stock_data = prepare_data('002414')
     print('data samples:\n', stock_data.head())
 
     data = bt.feeds.PandasData(dataname=stock_data,
@@ -143,6 +143,8 @@ if __name__ == '__main__':
     # Add a FixedSize sizer according to the stake
     cerebro.addsizer(bt.sizers.PercentSizer, percents=80)
 
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
+
     # Set the commission
     cerebro.broker.setcommission(commission=0.0001)
 
@@ -150,10 +152,17 @@ if __name__ == '__main__':
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
     # Run over everything
-    cerebro.run()
+    results = cerebro.run()
+
+    strat = results[0]
+    pyfoliozer = strat.analyzers.getbyname('pyfolio')
+    returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
 
     # Print out the final result
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
+
+    print('Returns:\n{}\nPositions:\n{}\nTxns:\n{}\nGrossLev:\n{}'.format(returns, positions, transactions, gross_lev))
+
 
     # Plot the result
     cerebro.plot()
