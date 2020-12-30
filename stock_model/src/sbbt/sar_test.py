@@ -8,7 +8,7 @@ import pandas as pd
 
 # Import the backtrader platform
 import backtrader as bt
-from backtraders.sar import SAR
+from sbbt.sar import SAR
 
 
 def prepare_data(code):

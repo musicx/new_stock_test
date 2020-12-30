@@ -2,9 +2,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import datetime  # For datetime objects
 from quantax.data_query_advance import local_get_stock_day_adv
-
+from sbbt.utilities import BasicTradeStats, prepare_stock, TradeList
 # Import the backtrader platform
 import backtrader as bt
+
+from tabulate import tabulate
 
 # Create a Stratey
 class BiasRatioCrossStrategy(bt.Strategy):
@@ -108,17 +110,6 @@ class BiasRatioCrossStrategy(bt.Strategy):
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
 
-
-
-def prepare_data(code):
-    print('reading data... {}'.format(code))
-    data = local_get_stock_day_adv(code, start=datetime.date(2010, 1, 1).strftime('%Y-%m-%d'),
-                                   end=datetime.datetime.today().strftime('%Y-%m-%d')).to_qfq()
-    formatted = data.data.reset_index().loc[:, ['date', 'open', 'high', 'low', 'close', 'volume']]
-    formatted.rename(columns={'date': 'datetime'}, inplace=True)
-    return formatted.set_index('datetime')
-
-
 if __name__ == '__main__':
     # Create a cerebro entity
     cerebro = bt.Cerebro()
@@ -127,7 +118,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(BiasRatioCrossStrategy)
 
     # Create a Data FeedRatio
-    stock_data = prepare_data('002414')
+    stock_data = prepare_stock('002414')
     print('data samples:\n', stock_data.head())
 
     data = bt.feeds.PandasData(dataname=stock_data,
@@ -143,7 +134,8 @@ if __name__ == '__main__':
     # Add a FixedSize sizer according to the stake
     cerebro.addsizer(bt.sizers.PercentSizer, percents=80)
 
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
+    cerebro.addanalyzer(BasicTradeStats, _name='basic')
+    cerebro.addanalyzer(TradeList, _name='trade')
 
     # Set the commission
     cerebro.broker.setcommission(commission=0.0001)
@@ -152,17 +144,16 @@ if __name__ == '__main__':
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
     # Run over everything
-    results = cerebro.run()
-
-    strat = results[0]
-    pyfoliozer = strat.analyzers.getbyname('pyfolio')
-    returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
+    results = cerebro.run(tradehistory=True)
 
     # Print out the final result
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
-    print('Returns:\n{}\nPositions:\n{}\nTxns:\n{}\nGrossLev:\n{}'.format(returns, positions, transactions, gross_lev))
+    basic = results[0].analyzers.getbyname('basic')
+    basic.print()
 
+    trade = results[0].analyzers.getbyname('trade').get_analysis()
+    print(tabulate(trade, headers="keys"))
 
     # Plot the result
-    cerebro.plot()
+    #cerebro.plot()
