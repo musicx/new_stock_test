@@ -247,7 +247,7 @@ class ChartFrame(object):
         valid_fracs = [frac for frac in self.fractals if frac.is_valid]
         for idx, frac in enumerate(valid_fracs[:-1]):
             stroke = Stroke(frac.index, valid_fracs[idx + 1].index, self.merged_candles)
-            print(stroke.tostring())
+            # print(stroke.tostring())
             strokes.append(stroke)
         self.strokes = strokes
 

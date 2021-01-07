@@ -11,6 +11,7 @@ class ChanIndicator(object):
         return high1 > low1 and high2 > low2 and min(high1, high2) > max(low1, low2)
 
     def near_pivot_lines(self, chart_frame, recent=3, limit=3):
+        print('finding pivot lines for {}'.format(chart_frame.code))
         lines = chart_frame.detect_price_boundary()
         detected_idx = {}
         for candle in chart_frame.raw_candles[-recent:]:

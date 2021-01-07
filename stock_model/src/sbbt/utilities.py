@@ -19,6 +19,16 @@ def prepare_stock(code, year=2010):
     return formatted.set_index('datetime')
 
 
+def prepare_stock_week(code, year=2010):
+    print('reading stock of {}...'.format(code))
+    data = local_get_stock_day_adv(code, start=datetime.date(year, 1, 1).strftime('%Y-%m-%d'),
+                                   end=datetime.datetime.today().strftime('%Y-%m-%d')).to_qfq()
+    data = data.resample(level='w')
+    formatted = data.reset_index().loc[:, ['date', 'open', 'high', 'low', 'close', 'volume']]
+    formatted.rename(columns={'date': 'datetime'}, inplace=True)
+    return formatted.set_index('datetime')
+
+
 def prepare_index(code, year=2010):
     print('reading index of {}...'.format(code))
     data = local_get_index_day_adv(code, start=datetime.date(year, 1, 1).strftime('%Y-%m-%d'),

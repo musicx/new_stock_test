@@ -77,20 +77,6 @@ _Index_min
 """
 
 
-def QA_fetch_option_day_adv(
-        code,
-        start='all',
-        end=None,
-        if_drop_index=True,
-        # 🛠 todo collections 参数没有用到， 且数据库是固定的， 这个变量后期去掉
-        collections=DATABASE.option_day
-):
-    '''
-
-    '''
-    pass
-
-
 def local_get_stock_day_adv(
         code,
         start='all',

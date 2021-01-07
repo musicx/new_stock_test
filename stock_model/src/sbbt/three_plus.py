@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import datetime  # For datetime objects
 from quantax.data_query_advance import local_get_stock_day_adv
-from sbbt.utilities import BasicTradeStats, prepare_stock, TradeList
+from sbbt.utilities import BasicTradeStats, prepare_stock, TradeList, prepare_stock_week
 # Import the backtrader platform
 import backtrader as bt
 
@@ -13,7 +13,7 @@ class ThreePlusStrategy(bt.Strategy):
     params = (
         ('short', 20),
         ('long', 60),
-        ('exit', 10),
+        ('exit', 5),
         ('gap', 0.03),
     )
 
@@ -37,6 +37,11 @@ class ThreePlusStrategy(bt.Strategy):
         self.exit = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.p.exit)
         self.sar = bt.indicators.ParabolicSAR(self.datas[0], af=0.02, afmax=0.1, plot=False)
         self.mtm = bt.indicators.MomentumOscillator(self.datas[0], period=20, plot=False)
+
+        self.week_short = bt.indicators.SimpleMovingAverage(self.datas[1], period=self.p.short)
+        self.week_long = bt.indicators.SimpleMovingAverage(self.datas[1], period=self.p.long)
+
+        self.pass_exit = False
 
         # Indicators for the plotting show
         bt.indicators.MACDHisto(self.datas[0])
@@ -89,21 +94,29 @@ class ThreePlusStrategy(bt.Strategy):
             # Not yet ... we MIGHT BUY if ...
             if (self.dataclose > self.short
                     and self.short > self.long
-                    #and self.dataclose > self.sar
+                    and self.dataclose > self.sar
                     and self.dataclose < self.short*(1+self.p.gap)
                     and self.short > self.short[-1]
                     and abs(self.mtm - 100) < 10
+                    and self.week_short > self.week_long
+                    and self.dataclose > self.week_short
             ):
                 # BUY, BUY, BUY!!! (with all possible default parameters)
                 self.log('BUY CREATE, %.2f' % self.dataclose[0])
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.buy()
+
+                if self.dataclose > self.exit:
+                    self.pass_exit = True
         else:
-            if self.dataclose < self.exit and self.dataclose > self.short:
+            if not self.pass_exit and self.dataclose > self.exit:
+                self.pass_exit = True
+            if (self.pass_exit and self.dataclose < self.exit) or (not self.pass_exit and self.dataclose < self.short):
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
+                self.pass_exit = False
 
 if __name__ == '__main__':
     # Create a cerebro entity
@@ -112,8 +125,9 @@ if __name__ == '__main__':
     # Add a strategy
     cerebro.addstrategy(ThreePlusStrategy)
 
+    stock_code = '600143'
     # Create a Data FeedRatio
-    stock_data = prepare_stock('600288')
+    stock_data = prepare_stock(stock_code)
     print('data samples:\n', stock_data.head())
 
     data = bt.feeds.PandasData(dataname=stock_data,
@@ -123,6 +137,13 @@ if __name__ == '__main__':
     # Add the Data Feed to Cerebro
     cerebro.adddata(data)
 
+    stock_data_week = prepare_stock_week(stock_code)
+    print('data resamples:\n', stock_data_week.head())
+    week_data = bt.feeds.PandasData(dataname=stock_data_week,
+                                    fromdate=datetime.datetime(2014, 1, 1),
+                                    todate=datetime.datetime(2020, 11, 30))
+    cerebro.adddata(week_data)
+
     # Set our desired cash start
     cerebro.broker.setcash(100000.0)
     cerebro.broker.set_coc(True)
@@ -131,7 +152,7 @@ if __name__ == '__main__':
     cerebro.addsizer(bt.sizers.PercentSizer, percents=99)
 
     cerebro.addanalyzer(BasicTradeStats, _name='basic')
-    #cerebro.addanalyzer(TradeList, _name='trade')
+    cerebro.addanalyzer(TradeList, _name='trade')
 
     # Set the commission
     cerebro.broker.setcommission(commission=0.0001)
@@ -148,8 +169,8 @@ if __name__ == '__main__':
     basic = results[0].analyzers.getbyname('basic')
     basic.print()
 
-    #trade = results[0].analyzers.getbyname('trade').get_analysis()
-    #print(tabulate(trade, headers="keys"))
+    trade = results[0].analyzers.getbyname('trade').get_analysis()
+    print(tabulate(trade, headers="keys"))
 
     # Plot the result
     #cerebro.plot()
