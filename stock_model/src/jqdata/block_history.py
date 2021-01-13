@@ -14,11 +14,10 @@ if __name__ == '__main__':
     client = MongoClient('mongodb://localhost:27017/')
     db = client['jqdata']
     coll = db['industry']
-    try:
-        coll.create_index([("code", 1), ("date_stamp", 1)], unique=True)
-    except:
-        pass
-
+    # try:
+    #     coll.create_index([("code", 1), ("date_stamp", 1)], unique=True)
+    # except:
+    #     pass
 
     print('start level1 now...')
     # count = 0
@@ -39,11 +38,11 @@ if __name__ == '__main__':
                 continue
             stocks = get_industry_stocks(code, date=date.strftime('%Y-%m-%d'))
             date_stamp = time.mktime(time.strptime(date.strftime('%Y-%m-%d'), '%Y-%m-%d'))
-            if (len(stocks) > 0):
+            if len(stocks) > 0:
                 print('doing date: {}'.format(date.strftime('%Y-%m-%d')))
                 parsed = [{'code': stock[:6], 'type': 'sw1', 'ind_code': code, 'ind_name': name,
                            'date': date.strftime('%Y-%m-%d'), 'date_stamp': date_stamp} for stock in stocks]
-                #print(parsed)
+                # print(parsed)
                 coll.insert_many(parsed)
 
     # exit(-1)
@@ -62,7 +61,7 @@ if __name__ == '__main__':
                 continue
             stocks = get_industry_stocks(code, date=date.strftime('%Y-%m-%d'))
             date_stamp = time.mktime(time.strptime(date.strftime('%Y-%m-%d'), '%Y-%m-%d'))
-            if (len(stocks) > 0):
+            if len(stocks) > 0:
                 print('doing date: {}'.format(date.strftime('%Y-%m-%d')))
                 parsed = [{'code': stock[:6], 'type': 'sw2', 'ind_code': code, 'ind_name': name,
                            'date': date.strftime('%Y-%m-%d'), 'date_stamp': date_stamp} for stock in stocks]
@@ -73,7 +72,7 @@ if __name__ == '__main__':
     for code, name, time_record in sw_l3.to_records():
         print('doing industry: {}'.format(name))
         start = pd.Timestamp(time_record)
-        last_date_cursor = coll.find({'ind_code': code}).sort('date_stamp', -1).limit(1)-
+        last_date_cursor = coll.find({'ind_code': code}).sort('date_stamp', -1).limit(1)
         if last_date_cursor.count(with_limit_and_skip=True) > 0:
             last_date = pd.Timestamp(last_date_cursor[0]['date'])
         else:
@@ -83,7 +82,7 @@ if __name__ == '__main__':
                 continue
             stocks = get_industry_stocks(code, date=date.strftime('%Y-%m-%d'))
             date_stamp = time.mktime(time.strptime(date.strftime('%Y-%m-%d'), '%Y-%m-%d'))
-            if (len(stocks) > 0):
+            if len(stocks) > 0:
                 print('doing date: {}'.format(date.strftime('%Y-%m-%d')))
                 parsed = [{'code': stock[:6], 'type': 'sw3', 'ind_code': code, 'ind_name': name,
                            'date': date.strftime('%Y-%m-%d'), 'date_stamp': date_stamp} for stock in stocks]
