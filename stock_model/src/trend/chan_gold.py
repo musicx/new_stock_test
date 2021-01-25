@@ -8,7 +8,7 @@ from utility import *
 if __name__ == '__main__':
     today = dt.datetime.today()
     # today = dt.datetime(2018, 7, 24)
-    start_date = today - dt.timedelta(days=365)
+    start_date = today - dt.timedelta(days=1000)
 
     # stocks = ['000528', '002049', '300529', '300607', '600518', '600588', '603877']
     # stocks = ['300638', '600516']
