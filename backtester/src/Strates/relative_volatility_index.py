@@ -16,32 +16,14 @@ class RVI(bt.Indicator):
     )
 
     def __init__(self):
-        self.lines.std = bt.indicators.StandardDeviation(self.data.close, timeperiod=self.p.std_period)
-
-    def next(self):
-        if self.data.close[0] > self.data.close[-1]:
-            self.lines.pos[0] = self.lines.std[0]
-        else:
-            self.lines.pos[0] = 0
-
-        if self.data.close[0] < self.data.close[-1]:
-            self.lines.pos[0] = self.lines.std[0]
-        else:
-            self.lines.pos[0] = 0
-
-        pos_nan = np.nan_to_num(self.lines.pos.get(size=self.p.std_period))
-        neg_nan = np.nan_to_num(self.lines.neg.get(size=self.p.std_period))
-
-        usum = math.fsum(pos_nan)
-        dsum = math.fsum(neg_nan)
-
-        uavg = bt.indicators.ExponentialSmoothing(usum, period=self.p.ema_period)
-        davg = bt.indicators.ExponentialSmoothing(dsum, period=self.p.ema_period)
-
-        if uavg + davg == 0:
-            self.lines.rvi[0] = 0
-        else:
-            self.lines.rvi[0] = 100 * uavg / (uavg + davg)
+        std = bt.ind.StandardDeviation(self.data, period=self.p.std_period)
+        pos = bt.If(self.data.close > self.data.close(-1), std, 0)
+        neg = bt.If(self.data.close < self.data.close(-1), std, 0)
+        usum = bt.ind.SumN(pos, period=self.p.std_period)
+        dsum = bt.ind.SumN(neg, period=self.p.std_period)
+        uavg = bt.ind.ExponentialMovingAverage(usum, period=self.p.ema_period)
+        davg = bt.ind.ExponentialMovingAverage(dsum, period=self.p.ema_period)
+        self.l.rvi = bt.ind.DivByZero(uavg, (uavg + davg)) * 100
 
 
 class RVICrossStrategy(bt.Strategy):
@@ -67,12 +49,11 @@ class RVICrossStrategy(bt.Strategy):
         # Add MovingAverageSimple indicator
         self.ma20 = bt.indicators.SimpleMovingAverage(self.datas[0], period=20)
         self.ma60 = bt.indicators.SimpleMovingAverage(self.datas[0], period=60)
-        self.rvi = RVI(data=self.datas[0], std_period=self.p.std_period, ema_period=self.p.ema_period)
+        self.rvi = RVI(self.data, std_period=self.p.std_period, ema_period=self.p.ema_period, subplot=True)
 
         # Indicators for the plotting show
         bt.indicators.StochasticSlow(self.datas[0])
         bt.indicators.MACDHisto(self.datas[0])
-        rsi = bt.indicators.RSI(self.datas[0])
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -117,8 +98,9 @@ class RVICrossStrategy(bt.Strategy):
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
             return
-        up = 60
-        down = 35
+        
+        up = 50
+        down = 50
 
         # Check if we are in the market
         if not self.position:
@@ -126,7 +108,7 @@ class RVICrossStrategy(bt.Strategy):
                 self.log('BUY CREATE, %.2f' % self.dataclose[0])
                 self.order = self.buy()
         else:
-            if self.rvi.rvi[0] < down and self.rvi.rvi[-1] > down and self.rvi.rvi[-2] > down:
+            if self.rvi.rvi[0] < down and self.rvi.rvi[-1] > down:
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
                 self.order = self.sell()
 
@@ -138,7 +120,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(RVICrossStrategy)
 
     # Create a Data FeedRatio
-    stock_data = prepare_stock('002414')
+    stock_data = prepare_stock('000758')
     print('data samples:\n', stock_data.head())
 
     data = bt.feeds.PandasData(dataname=stock_data,
