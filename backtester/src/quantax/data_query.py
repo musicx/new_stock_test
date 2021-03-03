@@ -5,7 +5,7 @@ import datetime
 import numpy
 import pandas as pd
 from pandas import DataFrame
-from quantax.settings import DATABASE
+from quantax.settings import DATABASE, JQDATA
 from quantax.utilities import (
     QA_util_date_stamp,
     QA_util_date_valid,
@@ -1220,3 +1220,27 @@ def local_get_stock_divyield(
                end)
         )
 
+
+def local_get_stock_sw_block(code, date, collections=JQDATA.industry):
+    code = QA_util_code_tolist(code)
+    date_stamp = [QA_util_date_str2int(date)]
+    try:
+        data = pd.DataFrame(
+            [
+                item for item in collections
+                .find({'code': {
+                    '$in': code
+                },
+                'date_stamp': {
+                    '$in': date_stamp
+                }
+            },
+                {"_id": 0},
+                batch_size=10000)
+            ]
+        )
+        # data['date'] = pd.to_datetime(data['date'])
+        return data.set_index('code', drop=False)
+    except Exception as e:
+        print(e)
+        return None
