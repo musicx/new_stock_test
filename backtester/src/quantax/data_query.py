@@ -1,7 +1,6 @@
 # coding: utf-8
 
-import datetime
-
+import time
 import numpy
 import pandas as pd
 from pandas import DataFrame
@@ -1223,7 +1222,7 @@ def local_get_stock_divyield(
 
 def local_get_stock_sw_block(code, date, collections=JQDATA.industry):
     code = QA_util_code_tolist(code)
-    date_stamp = [QA_util_date_str2int(date)]
+    date_stamp = time.mktime(time.strptime(date, '%Y-%m-%d'))
     try:
         data = pd.DataFrame(
             [
@@ -1231,16 +1230,16 @@ def local_get_stock_sw_block(code, date, collections=JQDATA.industry):
                 .find({'code': {
                     '$in': code
                 },
-                'date_stamp': {
-                    '$in': date_stamp
-                }
+                'date_stamp': date_stamp
             },
                 {"_id": 0},
                 batch_size=10000)
             ]
         )
+        ind = data.pivot(index='code', columns='type', values='ind_name')
+        ind['sw'] = ind.apply(lambda x: '-'.join([x['sw1'], x['sw2'], x['sw3']]), axis=1)
         # data['date'] = pd.to_datetime(data['date'])
-        return data.set_index('code', drop=False)
+        return ind
     except Exception as e:
         print(e)
         return None

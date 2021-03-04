@@ -1,11 +1,10 @@
 # coding: utf-8
 
-import datetime
-
+import time
 import numpy
 import pandas as pd
 from pandas import DataFrame
-from quantax.settings import DATABASE
+from quantax.settings import DATABASE, JQDATA
 from quantax.utilities import (
     QA_util_date_stamp,
     QA_util_date_valid,
@@ -1220,3 +1219,27 @@ def local_get_stock_divyield(
                end)
         )
 
+
+def local_get_stock_sw_block(code, date, collections=JQDATA.industry):
+    code = QA_util_code_tolist(code)
+    date_stamp = time.mktime(time.strptime(date, '%Y-%m-%d'))
+    try:
+        data = pd.DataFrame(
+            [
+                item for item in collections
+                .find({'code': {
+                    '$in': code
+                },
+                'date_stamp': date_stamp
+            },
+                {"_id": 0},
+                batch_size=10000)
+            ]
+        )
+        ind = data.pivot(index='code', columns='type', values='ind_name')
+        ind['sw'] = ind.apply(lambda x: '-'.join([x['sw1'], x['sw2'], x['sw3']]), axis=1)
+        # data['date'] = pd.to_datetime(data['date'])
+        return ind
+    except Exception as e:
+        print(e)
+        return None
