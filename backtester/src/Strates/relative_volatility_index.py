@@ -98,7 +98,7 @@ class RVICrossStrategy(bt.Strategy):
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
             return
-        
+
         up = 50
         down = 50
 
