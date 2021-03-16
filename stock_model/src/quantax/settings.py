@@ -274,8 +274,7 @@ class QA_Setting():
 QASETTING = QA_Setting()
 DATABASE = QASETTING.client.quantaxis
 DATABASE_ASYNC = QASETTING.client_async.quantaxis
-
-
+JQDATA = QASETTING.client.jqdata
 
 
 if os.path.exists(INFO_IP_FILE_PATH):

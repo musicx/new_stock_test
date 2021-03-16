@@ -266,4 +266,10 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-.idea
+*/.idea
+
+*/build/
+*/develop-eggs/
+*/dist/
+*/.ipynb_checkpoints
+*/data
