@@ -12,15 +12,16 @@ if __name__ == '__main__':
     sw_l1 = get_industries(name='sw_l1', date=None)
     sw_l2 = get_industries(name='sw_l2', date=None)
     sw_l3 = get_industries(name='sw_l3', date=None)
-    dates = get_trade_days(start_date='2004-02-10')
+    # dates = get_trade_days(start_date='2004-02-10')
+    dates = get_trade_days(start_date='2015-01-01')
 
     client = MongoClient('mongodb://localhost:27017/')
     db = client['jqdata']
     coll = db['industry']
-    # try:
-    #     coll.create_index([("code", 1), ("date_stamp", 1)], unique=True)
-    # except:
-    #     pass
+    try:
+        coll.create_index([("ind_code", 1), ("date_stamp", 1)])
+    except:
+        pass
 
     print('start level1 now...')
     # count = 0
